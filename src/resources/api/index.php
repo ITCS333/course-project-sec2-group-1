@@ -602,17 +602,20 @@ try {
         // TODO: Get resource_id from $_GET and call getCommentsByResourceId()
         if ($action === 'comments') {
             getCommentsByResourceId($db, $resourceId);
+            return;
         }
 
         // If 'id' is present in $_GET, return a single resource
         // TODO: Call getResourceById() with $_GET['id']
         if ($id !== null) {
             getResourceById($db, $id);
+            return;
         }
 
         // Otherwise, return all resources (supports ?search=, ?sort=, ?order=)
         // TODO: Call getAllResources()
         getAllResources($db);
+        return;
 
     } elseif ($method === 'POST') {
 
@@ -620,17 +623,20 @@ try {
         // TODO: Call createComment() with the decoded request body
         if ($action === 'comment') {
             createComment($db, $data);
+            return;
         }
 
         // Otherwise, create a new resource
         // TODO: Call createResource() with the decoded request body
         createResource($db, $data);
+        return;
 
     } elseif ($method === 'PUT') {
 
         // Update an existing resource
         // TODO: Call updateResource() with the decoded request body
         updateResource($db, $data);
+        return;
 
     } elseif ($method === 'DELETE') {
 
@@ -638,11 +644,13 @@ try {
         // TODO: Get comment_id from $_GET and call deleteComment()
         if ($action === 'delete_comment') {
             deleteComment($db, $commentId);
+            return;
         }
 
         // Otherwise, delete a resource
         // TODO: Get id from $_GET and call deleteResource()
         deleteResource($db, $id);
+        return;
 
     } else {
         // TODO: Return HTTP 405 Method Not Allowed for unsupported methods

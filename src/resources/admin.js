@@ -119,43 +119,12 @@ async function handleAddResource(event) {
   const titleInput = document.querySelector('#resource-title');
   const descriptionInput = document.querySelector('#resource-description');
   const linkInput = document.querySelector('#resource-link');
-  const submitButton = document.querySelector('#add-resource');
 
   const title = titleInput.value.trim();
   const description = descriptionInput.value.trim();
   const link = linkInput.value.trim();
 
   if (!title || !link) {
-    return;
-  }
-
-  if (editingResourceId !== null) {
-    const response = await fetch('./api/index.php', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: editingResourceId,
-        title,
-        description,
-        link
-      })
-    });
-
-    const result = await response.json();
-
-    if (result.success) {
-      resources = resources.map((resource) =>
-        Number(resource.id) === Number(editingResourceId)
-          ? { ...resource, title, description, link }
-          : resource
-      );
-
-      renderTable();
-      resourceForm.reset();
-      editingResourceId = null;
-      submitButton.textContent = 'Add Resource';
-    }
-
     return;
   }
 
@@ -227,6 +196,8 @@ async function handleTableClick(event) {
       resources = resources.filter((resource) => Number(resource.id) !== Number(id));
       renderTable();
     }
+
+    return;
   }
 
   if (target.classList.contains('edit-btn')) {
@@ -237,12 +208,66 @@ async function handleTableClick(event) {
       return;
     }
 
-    document.querySelector('#resource-title').value = resource.title;
-    document.querySelector('#resource-description').value = resource.description || '';
-    document.querySelector('#resource-link').value = resource.link;
-    document.querySelector('#add-resource').textContent = 'Update Resource';
+    const titleInput = document.querySelector('#resource-title');
+    const descriptionInput = document.querySelector('#resource-description');
+    const linkInput = document.querySelector('#resource-link');
+    const submitButton = document.querySelector('#add-resource');
+
+    titleInput.value = resource.title;
+    descriptionInput.value = resource.description || '';
+    linkInput.value = resource.link;
+    submitButton.textContent = 'Update Resource';
 
     editingResourceId = Number(id);
+
+    const updateHandler = async function (submitEvent) {
+      submitEvent.preventDefault();
+
+      const updatedTitle = titleInput.value.trim();
+      const updatedDescription = descriptionInput.value.trim();
+      const updatedLink = linkInput.value.trim();
+
+      if (!updatedTitle || !updatedLink) {
+        return;
+      }
+
+      const response = await fetch('./api/index.php', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingResourceId,
+          title: updatedTitle,
+          description: updatedDescription,
+          link: updatedLink
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        resources = resources.map((item) =>
+          Number(item.id) === Number(editingResourceId)
+            ? {
+                ...item,
+                title: updatedTitle,
+                description: updatedDescription,
+                link: updatedLink
+              }
+            : item
+        );
+
+        renderTable();
+        resourceForm.reset();
+        submitButton.textContent = 'Add Resource';
+        editingResourceId = null;
+
+        resourceForm.removeEventListener('submit', updateHandler);
+        resourceForm.addEventListener('submit', handleAddResource);
+      }
+    };
+
+    resourceForm.removeEventListener('submit', handleAddResource);
+    resourceForm.addEventListener('submit', updateHandler);
   }
 }
 
