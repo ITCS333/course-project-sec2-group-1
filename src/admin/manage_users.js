@@ -15,161 +15,350 @@
 let users = [];
 
 // --- Element Selections ---
-// We can safely select elements here because 'defer' guarantees
-// the HTML document is parsed before this script runs.
-
-// TODO: Select the user table body element with id="user-table-body".
-
-// TODO: Select the "Add User" form with id="add-user-form".
-
-// TODO: Select the "Change Password" form with id="password-form".
-
-// TODO: Select the search input field with id="search-input".
-
-// TODO: Select all table header (th) elements inside the thead of id="user-table".
+const userTableBody = document.getElementById("user-table-body");
+const addUserForm = document.getElementById("add-user-form");
+const passwordForm = document.getElementById("password-form");
+const searchInput = document.getElementById("search-input");
+const tableHeaders = document.querySelectorAll("#user-table thead th");
 
 // --- Functions ---
 
 /**
- * TODO: Implement the createUserRow function.
- * This function takes a user object { id, name, email, is_admin } and returns a <tr> element.
- * The <tr> should contain:
- * 1. A <td> for the user's name.
- * 2. A <td> for the user's email.
- * 3. A <td> showing admin status, e.g. "Yes" if is_admin === 1, otherwise "No".
- * 4. A <td> containing two buttons:
- *    - An "Edit" button with class "edit-btn" and a data-id attribute set to the user's id.
- *    - A "Delete" button with class "delete-btn" and a data-id attribute set to the user's id.
+ * Creates and returns a <tr> element for a given user object.
  */
 function createUserRow(user) {
-  // ... your implementation here ...
+  const tr = document.createElement("tr");
+
+  // Name cell
+  const nameTd = document.createElement("td");
+  nameTd.textContent = user.name;
+
+  // Email cell
+  const emailTd = document.createElement("td");
+  emailTd.textContent = user.email;
+
+  // Admin status cell
+  const adminTd = document.createElement("td");
+  adminTd.textContent = user.is_admin === 1 ? "Yes" : "No";
+
+  // Actions cell
+  const actionsTd = document.createElement("td");
+
+  const editBtn = document.createElement("button");
+  editBtn.textContent = "Edit";
+  editBtn.classList.add("edit-btn");
+  editBtn.dataset.id = user.id;
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.textContent = "Delete";
+  deleteBtn.classList.add("delete-btn");
+  deleteBtn.dataset.id = user.id;
+
+  actionsTd.appendChild(editBtn);
+  actionsTd.appendChild(deleteBtn);
+
+  // Assemble the row
+  tr.appendChild(nameTd);
+  tr.appendChild(emailTd);
+  tr.appendChild(adminTd);
+  tr.appendChild(actionsTd);
+
+  return tr;
 }
 
-/**
- * TODO: Implement the renderTable function.
- * This function takes an array of user objects.
- * It should:
- * 1. Clear the current content of the userTableBody.
- * 2. Loop through the provided array of users.
- * 3. For each user, call createUserRow and append the returned <tr> to userTableBody.
- */
-function renderTable(userArray) {
-  // ... your implementation here ...
+
+function renderTable(usersArray) {
+  // 1. Clear the table body
+  userTableBody.innerHTML = "";
+
+  // 2 & 3. Loop and append a row for each user
+  usersArray.forEach(user => {
+    const row = createUserRow(user);
+    userTableBody.appendChild(row);
+  });
 }
 
-/**
- * TODO: Implement the handleChangePassword function.
- * This function is called when the "Update Password" form is submitted.
- * It should:
- * 1. Prevent the form's default submission behaviour.
- * 2. Get the values from "current-password", "new-password", and "confirm-password" inputs.
- * 3. Perform client-side validation:
- *    - If "new-password" and "confirm-password" do not match, show an alert: "Passwords do not match."
- *    - If "new-password" is less than 8 characters, show an alert: "Password must be at least 8 characters."
- * 4. If validation passes, send a POST request to '../api/index.php?action=change_password'
- *    with a JSON body: { id, current_password, new_password }
- *    where 'id' is the currently logged-in admin's user id.
- * 5. On success, show an alert: "Password updated successfully!" and clear all three inputs.
- * 6. On failure, show the error message returned by the API.
- */
-function handleChangePassword(event) {
-  // ... your implementation here ...
+
+
+  async function handleChangePassword(event) {
+  event.preventDefault();
+
+  // 2. Get input values
+  const currentPassword = document.getElementById("current-password").value;
+  const newPassword = document.getElementById("new-password").value;
+  const confirmPassword = document.getElementById("confirm-password").value;
+
+  // 3. Client-side validation
+  if (newPassword !== confirmPassword) {
+    alert("Passwords do not match.");
+    return;
+  }
+
+  if (newPassword.length < 8) {
+    alert("Password must be at least 8 characters.");
+    return;
+  }
+
+  // 4. Send POST request to the API
+  try {
+    const response = await fetch("../api/index.php?action=change_password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: loggedInUserId,        // the currently logged-in admin's id
+        current_password: currentPassword,
+        new_password: newPassword,
+      }),
+    });
+
+    const data = await response.json();
+
+    // 5. On success
+    if (response.ok && data.success) {
+      alert("Password updated successfully!");
+      document.getElementById("current-password").value = "";
+      document.getElementById("new-password").value = "";
+      document.getElementById("confirm-password").value = "";
+    } else {
+      // 6. On failure
+      alert(data.message || "An error occurred. Please try again.");
+    }
+
+  } catch (error) {
+    alert("Network error: " + error.message);
+  }
 }
 
-/**
- * TODO: Implement the handleAddUser function.
- * This function is called when the "Add User" form is submitted.
- * It should:
- * 1. Prevent the form's default submission behaviour.
- * 2. Get the values from "user-name", "user-email", "default-password", and "is-admin".
- * 3. Perform client-side validation:
- *    - If name, email, or password are empty, show an alert: "Please fill out all required fields."
- *    - If password is less than 8 characters, show an alert: "Password must be at least 8 characters."
- * 4. If validation passes, send a POST request to '../api/index.php'
- *    with a JSON body: { name, email, password, is_admin }
- * 5. On success (HTTP 201), re-fetch the full user list by calling loadUsersAndInitialize()
- *    so the table reflects the new record from the database.
- * 6. Clear the form inputs on success.
- * 7. On failure, show the error message returned by the API.
- */
-function handleAddUser(event) {
-  // ... your implementation here ...
+
+async function handleAddUser(event) {
+  event.preventDefault();
+
+  // 2. Get input values
+  const name = document.getElementById("user-name").value.trim();
+  const email = document.getElementById("user-email").value.trim();
+  const password = document.getElementById("default-password").value.trim();
+  const is_admin = document.getElementById("is-admin").value;
+
+  // 3. Client-side validation
+  if (!name || !email || !password) {
+    alert("Please fill out all required fields.");
+    return;
+  }
+
+  if (password.length < 8) {
+    alert("Password must be at least 8 characters.");
+    return;
+  }
+
+  // 4. Send POST request to the API
+  try {
+    const response = await fetch("../api/index.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password, is_admin }),
+    });
+
+    const data = await response.json();
+
+    // 5. On success (HTTP 201)
+    if (response.status === 201) {
+      await loadUsersAndInitialize();
+
+      // 6. Clear the form
+      document.getElementById("user-name").value = "";
+      document.getElementById("user-email").value = "";
+      document.getElementById("default-password").value = "";
+      document.getElementById("is-admin").value = "0";
+
+    } else {
+      // 7. On failure
+      alert(data.message || "An error occurred. Please try again.");
+    }
+
+  } catch (error) {
+    alert("Network error: " + error.message);
+  }
 }
 
-/**
- * TODO: Implement the handleTableClick function.
- * This function is an event listener on userTableBody (event delegation).
- * It should:
- * 1. Check if the clicked element has the class "delete-btn".
- * 2. If it is a "delete-btn":
- *    - Get the data-id attribute from the button (this is the user's database id).
- *    - Send a DELETE request to '../api/index.php?id=' + id.
- *    - On success, remove the user from the local 'users' array and call renderTable(users).
- *    - On failure, show the error message returned by the API.
- * 3. If it is an "edit-btn":
- *    - Get the data-id attribute from the button.
- *    - (Optional) Populate an edit form or prompt with the user's current data
- *      and send a PUT request to '../api/index.php' with the updated fields.
- */
-function handleTableClick(event) {
-  // ... your implementation here ...
+async function handleTableClick(event) {
+  const target = event.target;
+  const id = target.dataset.id;
+
+  // 1 & 2. Handle Delete button
+  if (target.classList.contains("delete-btn")) {
+    if (!confirm("Are you sure you want to delete this user?")) return;
+
+    try {
+      const response = await fetch("../api/index.php?id=" + id, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Remove from local array and re-render
+        users = users.filter(user => user.id != id);
+        renderTable(users);
+      } else {
+        alert(data.message || "Failed to delete user.");
+      }
+
+    } catch (error) {
+      alert("Network error: " + error.message);
+    }
+  }
+
+  // 3. Handle Edit button
+  if (target.classList.contains("edit-btn")) {
+    const user = users.find(u => u.id == id);
+    if (!user) return;
+
+    const newName = prompt("Edit name:", user.name);
+    if (newName === null) return; // user cancelled
+
+    const newEmail = prompt("Edit email:", user.email);
+    if (newEmail === null) return;
+
+    const newIsAdmin = prompt("Admin? (1 = Yes, 0 = No):", user.is_admin);
+    if (newIsAdmin === null) return;
+
+    try {
+      const response = await fetch("../api/index.php", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: user.id,
+          name: newName.trim(),
+          email: newEmail.trim(),
+          is_admin: parseInt(newIsAdmin),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Update local array and re-render
+        users = users.map(u =>
+          u.id == id
+            ? { ...u, name: newName.trim(), email: newEmail.trim(), is_admin: parseInt(newIsAdmin) }
+            : u
+        );
+        renderTable(users);
+      } else {
+        alert(data.message || "Failed to update user.");
+      }
+
+    } catch (error) {
+      alert("Network error: " + error.message);
+    }
+  }
 }
 
-/**
- * TODO: Implement the handleSearch function.
- * This function is called on the "input" event of the searchInput.
- * It should:
- * 1. Get the search term from searchInput.value and convert it to lowercase.
- * 2. If the search term is empty, call renderTable(users) to show all users.
- * 3. Otherwise, filter the local 'users' array to find users whose name or email
- *    (converted to lowercase) includes the search term.
- * 4. Call renderTable with the filtered array.
- *    (This filters the client-side cache only; no extra API call is needed.)
- */
-function handleSearch(event) {
-  // ... your implementation here ...
+function handleSearch() {
+  // 1. Get search term in lowercase
+  const term = searchInput.value.toLowerCase().trim();
+
+  // 2. If empty, show all users
+  if (!term) {
+    renderTable(users);
+    return;
+  }
+
+  // 3. Filter by name or email
+  const filtered = users.filter(user =>
+    user.name.toLowerCase().includes(term) ||
+    user.email.toLowerCase().includes(term)
+  );
+
+  // 4. Render the filtered results
+  renderTable(filtered);
 }
 
-/**
- * TODO: Implement the handleSort function.
- * This function is called when any <th> in the thead is clicked.
- * It should:
- * 1. Identify which column was clicked using event.currentTarget.cellIndex.
- * 2. Map the cell index to a property name:
- *    - index 0 -> 'name'
- *    - index 1 -> 'email'
- *    - index 2 -> 'is_admin'
- * 3. Toggle sort direction using a data-sort-dir attribute on the <th>
- *    between "asc" and "desc".
- * 4. Sort the local 'users' array in place using array.sort():
- *    - For 'name' and 'email', use localeCompare for string comparison.
- *    - For 'is_admin', compare the values as numbers.
- * 5. Respect the sort direction (ascending or descending).
- * 6. Call renderTable(users) to update the view.
- */
 function handleSort(event) {
-  // ... your implementation here ...
-}
+  const th = event.currentTarget;
 
-/**
- * TODO: Implement the loadUsersAndInitialize function.
- * This function must be async.
- * It should:
- * 1. Send a GET request to '../api/index.php' using fetch().
- * 2. Check if the response is ok. If not, log the error and show an alert.
- * 3. Parse the JSON response: await response.json().
- *    The API returns { success: true, data: [ ...users ] }.
- * 4. Assign the data array to the global 'users' variable.
- * 5. Call renderTable(users) to populate the table.
- * 6. Attach all event listeners (only on the first call, or use { once: true } where appropriate):
- *    - "submit" on changePasswordForm  -> handleChangePassword
- *    - "submit" on addUserForm         -> handleAddUser
- *    - "click"  on userTableBody       -> handleTableClick
- *    - "input"  on searchInput         -> handleSearch
- *    - "click"  on each th in tableHeaders -> handleSort
- */
+  // 1. Identify which column was clicked
+  const cellIndex = th.cellIndex;
+
+  // 2. Map index to property name
+  const columnMap = {
+    0: "name",
+    1: "email",
+    2: "is_admin",
+  };
+  const column = columnMap[cellIndex];
+  if (!column) return; // index 3 is "Actions" — not sortable
+
+  // 3. Toggle sort direction
+  const currentDir = th.getAttribute("data-sort-dir");
+  const newDir = currentDir === "asc" ? "desc" : "asc";
+  th.setAttribute("data-sort-dir", newDir);
+
+  // 4 & 5. Sort users array in place
+  users.sort((a, b) => {
+    if (column === "is_admin") {
+      // Numeric comparison
+      return newDir === "asc"
+        ? a.is_admin - b.is_admin
+        : b.is_admin - a.is_admin;
+    } else {
+      // String comparison
+      return newDir === "asc"
+        ? a[column].localeCompare(b[column])
+        : b[column].localeCompare(a[column]);
+    }
+  });
+
+  // 6. Re-render the table
+  renderTable(users);
+}
 async function loadUsersAndInitialize() {
-  // ... your implementation here ...
+  // 1. Send GET request to the API
+  try {
+    const response = await fetch("../api/index.php");
+
+    // 2. Check if response is ok
+    if (!response.ok) {
+      console.error("Failed to fetch users:", response.status);
+      alert("Failed to load users. Please try again.");
+      return;
+    }
+
+    // 3. Parse JSON response
+    const result = await response.json();
+
+    // 4. Assign data to global users array
+    users = result.data;
+
+    // 5. Render the table
+    renderTable(users);
+
+  } catch (error) {
+    console.error("Network error:", error);
+    alert("Network error: " + error.message);
+    return;
+  }
+
+  // 6. Attach event listeners (once: true prevents duplicates on re-calls)
+  if (passwordForm) {
+    passwordForm.addEventListener("submit", handleChangePassword, { once: true });
+  }
+
+  if (addUserForm) {
+    addUserForm.addEventListener("submit", handleAddUser, { once: true });
+  }
+
+  if (userTableBody) {
+    userTableBody.addEventListener("click", handleTableClick, { once: true });
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener("input", handleSearch, { once: true });
+  }
+
+  tableHeaders.forEach(th => {
+    th.addEventListener("click", handleSort, { once: true });
+  });
 }
 
 // --- Initial Page Load ---
