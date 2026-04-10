@@ -85,10 +85,12 @@ function createResourceRow(resource) {
  * 3. For each resource, call `createResourceRow()` and
  *    append the returned <tr> to the table body.
  */
-function renderTable() {
+function renderTable(data) {
+  const list = data !== undefined ? data : resources;
+
   resourcesTableBody.innerHTML = '';
 
-  resources.forEach((resource) => {
+  list.forEach((resource) => {
     const row = createResourceRow(resource);
     resourcesTableBody.appendChild(row);
   });
@@ -151,34 +153,6 @@ async function handleAddResource(event) {
 
 /**
  * TODO: Implement the handleTableClick function.
- * This handles click events on the table body using event delegation.
- * It should:
- *
- * If the clicked element has class "delete-btn":
- * 1. Get the resource id from the button's data-id attribute.
- * 2. Use `fetch()` to DELETE the resource via the API:
- *    - URL: `./api/index.php?id=${id}`
- *    - Method: DELETE
- * 3. On success, remove the resource from the global `resources` array
- *    by filtering out the entry with the matching id.
- * 4. Call `renderTable()` to refresh the list.
- *
- * If the clicked element has class "edit-btn":
- * 1. Get the resource id from the button's data-id attribute.
- * 2. Find the matching resource in the global `resources` array.
- * 3. Populate the form fields (id="resource-title", id="resource-description",
- *    id="resource-link") with the resource's current values so the admin
- *    can edit them.
- * 4. Change the submit button (id="add-resource") text to "Update Resource"
- *    to indicate edit mode.
- * 5. On form submit, use `fetch()` to PUT the updated resource to the API:
- *    - URL: './api/index.php'
- *    - Method: PUT
- *    - Headers: { 'Content-Type': 'application/json' }
- *    - Body: JSON.stringify({ id, title, description, link })
- * 6. On success, update the matching resource in the global `resources` array.
- * 7. Call `renderTable()` and reset the form back to "Add" mode,
- *    restoring the submit button text to "Add Resource".
  */
 async function handleTableClick(event) {
   const target = event.target;
@@ -273,17 +247,6 @@ async function handleTableClick(event) {
 
 /**
  * TODO: Implement the loadAndInitialize function.
- * This function must be 'async'.
- * It should:
- * 1. Use `fetch()` to GET all resources from the API:
- *    - URL: './api/index.php'
- *    - The API returns { success: true, data: [...] }
- * 2. Store the resources array (from `data`) in the global `resources` variable.
- * 3. Call `renderTable()` to populate the table for the first time.
- * 4. Add the 'submit' event listener to the resource form (id="resource-form"),
- *    calling `handleAddResource`.
- * 5. Add the 'click' event listener to the table body (id="resources-tbody"),
- *    calling `handleTableClick`.
  */
 async function loadAndInitialize() {
   const response = await fetch('./api/index.php');
@@ -297,5 +260,4 @@ async function loadAndInitialize() {
 }
 
 // --- Initial Page Load ---
-// Call the main async function to start the application.
 loadAndInitialize();
