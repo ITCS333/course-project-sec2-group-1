@@ -1,12 +1,20 @@
 <?php
 
 class Database {
-    private $host = 'localhost';
-    private $db_name = 'course_project';
-    private $username = 'root';
-    private $password = '';
-    private $port = '3306';
+    private $host;
+    private $db_name;
+    private $username;
+    private $password;
+    private $port;
     private $conn = null;
+
+    public function __construct() {
+        $this->host = getenv('DB_HOST') ?: '127.0.0.1';
+        $this->db_name = getenv('DB_DATABASE') ?: (getenv('DB_NAME') ?: 'course');
+        $this->username = getenv('DB_USERNAME') ?: 'root';
+        $this->password = getenv('DB_PASSWORD') ?: '';
+        $this->port = getenv('DB_PORT') ?: '3306';
+    }
 
     public function getConnection() {
         if ($this->conn !== null) {
