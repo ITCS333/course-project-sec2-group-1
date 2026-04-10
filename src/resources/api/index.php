@@ -718,7 +718,7 @@ function validateUrl($url) {
 function sanitizeInput($data) {
     // TODO: trim() → strip_tags() → htmlspecialchars(ENT_QUOTES, 'UTF-8')
     // Return the sanitized string
-    return trim(strip_tags((string)$data));
+    return htmlspecialchars(strip_tags(trim((string)$data)), ENT_QUOTES, 'UTF-8');
 }
 
 
