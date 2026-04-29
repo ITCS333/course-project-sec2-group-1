@@ -11,8 +11,8 @@ function displayMessage(message, type) {
 }
 
 function isValidEmail(email) {
-  const emailRegex = /\S+@\S+\.\S+/;
-  return emailRegex.test(email);
+  const regex = /\S+@\S+\.\S+/;
+  return regex.test(email);
 }
 
 function isValidPassword(password) {
