@@ -9,22 +9,39 @@ const tableHeaders = document.querySelectorAll("#user-table thead th");
 function createUserRow(user) {
   const tr = document.createElement("tr");
 
-  tr.innerHTML = `
-    <td>${user.name}</td>
-    <td>${user.email}</td>
-    <td>${Number(user.is_admin) === 1 ? "Yes" : "No"}</td>
-    <td>
-      <button class="edit-btn" data-id="${user.id}">Edit</button>
-      <button class="delete-btn" data-id="${user.id}">Delete</button>
-    </td>
-  `;
+  const nameTd = document.createElement("td");
+  nameTd.textContent = user.name;
+
+  const emailTd = document.createElement("td");
+  emailTd.textContent = user.email;
+
+  const adminTd = document.createElement("td");
+  adminTd.textContent = Number(user.is_admin) === 1 ? "Yes" : "No";
+
+  const actionsTd = document.createElement("td");
+
+  const editBtn = document.createElement("button");
+  editBtn.textContent = "Edit";
+  editBtn.classList.add("edit-btn");
+  editBtn.dataset.id = user.id;
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.textContent = "Delete";
+  deleteBtn.classList.add("delete-btn");
+  deleteBtn.dataset.id = user.id;
+
+  actionsTd.appendChild(editBtn);
+  actionsTd.appendChild(deleteBtn);
+
+  tr.appendChild(nameTd);
+  tr.appendChild(emailTd);
+  tr.appendChild(adminTd);
+  tr.appendChild(actionsTd);
 
   return tr;
 }
 
 function renderTable(usersArray) {
-  if (!userTableBody) return;
-
   userTableBody.innerHTML = "";
 
   usersArray.forEach(function (user) {
@@ -32,18 +49,26 @@ function renderTable(usersArray) {
   });
 }
 
-async function loadUsersAndInitialize() {
-  try {
-    const response = await fetch("../api/index.php");
-    const result = await response.json();
+function handleChangePassword(event) {
+  event.preventDefault();
 
-    users = result.data || result.users || result || [];
+  const currentPassword = document.getElementById("current-password");
+  const newPassword = document.getElementById("new-password");
+  const confirmPassword = document.getElementById("confirm-password");
 
-    renderTable(users);
-  } catch (error) {
-    users = [];
-    renderTable(users);
+  if (newPassword.value !== confirmPassword.value) {
+    alert("Passwords do not match.");
+    return;
   }
+
+  if (newPassword.value.length < 8) {
+    alert("Password must be at least 8 characters.");
+    return;
+  }
+
+  currentPassword.value = "";
+  newPassword.value = "";
+  confirmPassword.value = "";
 }
 
 async function handleAddUser(event) {
@@ -64,65 +89,11 @@ async function handleAddUser(event) {
     return;
   }
 
-  const response = await fetch("../api/index.php", {
+  await fetch("../api/index.php", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      name: name,
-      email: email,
-      password: password,
-      is_admin: is_admin
-    })
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, email, password, is_admin })
   });
-
-  const data = await response.json();
-
-  if (response.ok && data.success) {
-    if (addUserForm) addUserForm.reset();
-    await loadUsersAndInitialize();
-  } else {
-    alert(data.message || "An error occurred. Please try again.");
-  }
-}
-
-async function handleChangePassword(event) {
-  event.preventDefault();
-
-  const currentPassword = document.getElementById("current-password").value;
-  const newPassword = document.getElementById("new-password").value;
-  const confirmPassword = document.getElementById("confirm-password").value;
-
-  if (newPassword !== confirmPassword) {
-    alert("Passwords do not match.");
-    return;
-  }
-
-  if (newPassword.length < 8) {
-    alert("Password must be at least 8 characters.");
-    return;
-  }
-
-  const response = await fetch("../api/index.php?action=change_password", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      current_password: currentPassword,
-      new_password: newPassword
-    })
-  });
-
-  const data = await response.json();
-
-  if (response.ok && data.success) {
-    alert("Password updated successfully!");
-    if (passwordForm) passwordForm.reset();
-  } else {
-    alert(data.message || "An error occurred. Please try again.");
-  }
 }
 
 async function handleTableClick(event) {
@@ -130,18 +101,9 @@ async function handleTableClick(event) {
   const id = target.dataset.id;
 
   if (target.classList.contains("delete-btn")) {
-    const response = await fetch("../api/index.php?id=" + id, {
+    await fetch("../api/index.php?id=" + id, {
       method: "DELETE"
     });
-
-    const data = await response.json();
-
-    if (response.ok && data.success) {
-      users = users.filter(function (user) {
-        return user.id != id;
-      });
-      renderTable(users);
-    }
   }
 
   if (target.classList.contains("edit-btn")) {
@@ -160,11 +122,9 @@ async function handleTableClick(event) {
     const newIsAdmin = prompt("Admin? (1 = Yes, 0 = No):", user.is_admin);
     if (newIsAdmin === null) return;
 
-    const response = await fetch("../api/index.php", {
+    await fetch("../api/index.php", {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         id: user.id,
         name: newName.trim(),
@@ -172,20 +132,16 @@ async function handleTableClick(event) {
         is_admin: Number(newIsAdmin)
       })
     });
-
-    const data = await response.json();
-
-    if (response.ok && data.success) {
-      user.name = newName.trim();
-      user.email = newEmail.trim();
-      user.is_admin = Number(newIsAdmin);
-      renderTable(users);
-    }
   }
 }
 
 function handleSearch() {
   const term = searchInput.value.toLowerCase().trim();
+
+  if (!term) {
+    renderTable(users);
+    return;
+  }
 
   const filtered = users.filter(function (user) {
     return (
@@ -198,49 +154,60 @@ function handleSearch() {
 }
 
 function handleSort(event) {
-  const columnIndex = event.currentTarget.cellIndex;
+  const th = event.currentTarget;
+  const columnIndex = th.cellIndex;
   const columns = ["name", "email", "is_admin"];
   const column = columns[columnIndex];
 
   if (!column) return;
 
+  const currentDir = th.getAttribute("data-sort-dir");
+  const newDir = currentDir === "asc" ? "desc" : "asc";
+
+  th.setAttribute("data-sort-dir", newDir);
+
   users.sort(function (a, b) {
-    if (a[column] > b[column]) return 1;
-    if (a[column] < b[column]) return -1;
-    return 0;
+    if (column === "is_admin") {
+      return newDir === "asc"
+        ? Number(a.is_admin) - Number(b.is_admin)
+        : Number(b.is_admin) - Number(a.is_admin);
+    }
+
+    return newDir === "asc"
+      ? a[column].localeCompare(b[column])
+      : b[column].localeCompare(a[column]);
   });
 
   renderTable(users);
 }
 
-if (addUserForm) {
-  addUserForm.addEventListener("submit", handleAddUser);
+async function loadUsersAndInitialize() {
+  if (passwordForm) {
+    passwordForm.addEventListener("submit", handleChangePassword);
+  }
+
+  if (addUserForm) {
+    addUserForm.addEventListener("submit", handleAddUser);
+  }
+
+  if (userTableBody) {
+    userTableBody.addEventListener("click", handleTableClick);
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener("input", handleSearch);
+  }
+
+  tableHeaders.forEach(function (th) {
+    th.addEventListener("click", handleSort);
+  });
+
+  const response = await fetch("../api/index.php");
+  const result = await response.json();
+
+  users = result.data || result.users || [];
+
+  renderTable(users);
 }
-
-if (passwordForm) {
-  passwordForm.addEventListener("submit", handleChangePassword);
-}
-
-if (userTableBody) {
-  userTableBody.addEventListener("click", handleTableClick);
-}
-
-if (searchInput) {
-  searchInput.addEventListener("input", handleSearch);
-}
-
-tableHeaders.forEach(function (th) {
-  th.addEventListener("click", handleSort);
-});
-
-window.users = users;
-window.createUserRow = createUserRow;
-window.renderTable = renderTable;
-window.loadUsersAndInitialize = loadUsersAndInitialize;
-window.handleAddUser = handleAddUser;
-window.handleChangePassword = handleChangePassword;
-window.handleTableClick = handleTableClick;
-window.handleSearch = handleSearch;
-window.handleSort = handleSort;
 
 loadUsersAndInitialize();
