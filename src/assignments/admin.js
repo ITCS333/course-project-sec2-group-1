@@ -62,9 +62,9 @@ function createAssignmentRow(assignment) {
    const tr = document.createElement("tr");
 
   tr.innerHTML = `
-    <td>${assignment.title}</td>
-    <td>${assignment.due_date}</td>
-    <td>${assignment.description}</td>
+    <td>${escapeHtml(assignment.title)}</td>
+    <td>${escapeHtml(assignment.due_date)}</td>
+    <td>${escapeHtml(assignment.description)}</td>
     <td>
       <button class="edit-btn" data-id="${assignment.id}">Edit</button>
       <button class="delete-btn" data-id="${assignment.id}">Delete</button>
@@ -73,6 +73,16 @@ function createAssignmentRow(assignment) {
 
   // Return the fully constructed row
   return tr;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
 }
 
 /**
@@ -132,6 +142,12 @@ async function handleAddAssignment(event) {
   const files = filesRaw.split('\n')
                         .map(link => link.trim())
                         .filter(link => link !== "");
+
+  if (!title || !due_date || !description) {
+    alert("Please fill in all required fields (Title, Due Date, Description)");
+    return;
+  }
+
   const submitBtn = document.getElementById("add-assignment");
   const editId = submitBtn.getAttribute("data-edit-id");
 
@@ -161,14 +177,14 @@ async function handleAddAssignment(event) {
 
         assForm.reset();
       } else {
-        alert("Failed to save assignment: " + (result.error || "Unknown error"));
+        alert("Failed to save assignment: " + (result.message || "Unknown error"));
       }
     } catch (error) {
       console.error("Error adding assignment:", error);
     }
   }
 }
-assForm.addEventListener("submit", handleAddAssignment);
+//assForm.addEventListener("submit", handleAddAssignment);
 
 /**
  * TODO: Implement handleUpdateAssignment (async).
@@ -213,7 +229,7 @@ async function handleUpdateAssignment(id, fields) {
       submitBtn.removeAttribute("data-edit-id");
       
     } else {
-      alert("Update failed: " + (result.error || "Unknown error"));
+      alert("Update failed: " + (result.message || "Unknown error"));
     }
   } catch (error) {
     console.error("Error updating assignment:", error);
@@ -261,6 +277,9 @@ async function handleTableClick(event) {
         assignments = assignments.filter(a => a.id != id);
         renderTable();
       }
+      else {
+        alert("Delete failed: " + (result.message || "Unknown error"));
+      }
     } catch (error) {
       console.error("Error deleting assignment:", error);
     }
@@ -273,8 +292,12 @@ async function handleTableClick(event) {
       document.getElementById("assignment-title").value = assignment.title;
       document.getElementById("assignment-due-date").value = assignment.due_date;
       document.getElementById("assignment-description").value = assignment.description;
-      
-      document.getElementById("assignment-files").value = assignment.files.join('\n');
+      //document.getElementById("assignment-files").value = assignment.files.join('\n');
+
+      const filesInput = document.getElementById("assignment-files");
+      if (filesInput) {
+        filesInput.value = Array.isArray(assignment.files) ? assignment.files.join('\n') : '';
+      }
 
       const submitBtn = document.getElementById("add-assignment");
       submitBtn.textContent = "Update Assignment";
@@ -284,7 +307,7 @@ async function handleTableClick(event) {
     }
   }
 }
-assTable.addEventListener("click", handleTableClick);
+//assTable.addEventListener("click", handleTableClick);
 
 /**
  * TODO: Implement loadAndInitialize (async).
@@ -316,10 +339,9 @@ async function loadAndInitialize() {
     console.error("Error during initialization:", error);
   }
 
-  
   assForm.addEventListener("submit", handleAddAssignment);
-
   assTable.addEventListener("click", handleTableClick);
+
 }
 
 

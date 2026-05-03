@@ -25,6 +25,7 @@
 // --- Element Selections ---
 // TODO: Select the section for the assignment list using its
 //       id 'assignment-list-section'.
+const assignmentListSection = document.getElementById("assignment-list-section");
 
 // --- Functions ---
 
@@ -55,6 +56,28 @@
  */
 function createAssignmentArticle(assignment) {
   // ... your implementation here ...
+  const article = document.createElement("article");
+  
+  const title = document.createElement("h2");
+  title.textContent = assignment.title;
+  
+  const dueDate = document.createElement("p");
+  dueDate.textContent = `Due: ${assignment.due_date}`;
+  
+  const description = document.createElement("p");
+  description.textContent = assignment.description;
+  
+  const link = document.createElement("a");
+  link.href = `details.html?id=${assignment.id}`;
+  link.textContent = "View Details & Discussion";
+  
+  article.appendChild(title);
+  article.appendChild(dueDate);
+  article.appendChild(description);
+  article.appendChild(link);
+  
+  return article;
+
 }
 
 /**
@@ -72,6 +95,27 @@ function createAssignmentArticle(assignment) {
  */
 async function loadAssignments() {
   // ... your implementation here ...
+  try {
+    const response = await fetch('./api/index.php');
+    const result = await response.json();
+    
+    if (result.success && Array.isArray(result.data)) {
+      // Clear existing content
+      assignmentListSection.innerHTML = "";
+      
+      // Loop through assignments and add each to the page
+      result.data.forEach(assignment => {
+        const article = createAssignmentArticle(assignment);
+        assignmentListSection.appendChild(article);
+      });
+    } else {
+      console.error("Failed to load assignments or data format is incorrect.");
+      assignmentListSection.innerHTML = "<p>Error loading assignments. Please try again later.</p>";
+    }
+  } catch (error) {
+    console.error("Error loading assignments:", error);
+    assignmentListSection.innerHTML = "<p>Network error. Please check your connection and try again.</p>";
+  }
 }
 
 // --- Initial Page Load ---
