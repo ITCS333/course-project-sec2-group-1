@@ -82,16 +82,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 
 // TODO: Include the database connection file
-// The Database class lives at src/resources/api/config/Database.php
-// require_once './config/Database.php';
-require_once __DIR__ . '/config/Database.php';
+// getDBConnection() is provided by db.php (injected by the test framework,
+// or by the common db.php in production). Do NOT use the Database class here.
+require_once __DIR__ . '/db.php';
 
 
 // TODO: Get the PDO database connection
-// $database = new Database();
-// $db = $database->getConnection();
-$database = new Database();
-$db = $database->getConnection();
+$db = getDBConnection();
 
 
 // TODO: Get the HTTP request method
