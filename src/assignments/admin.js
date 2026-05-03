@@ -184,7 +184,6 @@ async function handleAddAssignment(event) {
     }
   }
 }
-//assForm.addEventListener("submit", handleAddAssignment);
 
 /**
  * TODO: Implement handleUpdateAssignment (async).
@@ -303,11 +302,13 @@ async function handleTableClick(event) {
       submitBtn.textContent = "Update Assignment";
       submitBtn.setAttribute("data-edit-id", id);
       
-      document.getElementById("assignment-form").scrollIntoView({ behavior: 'smooth' });
+const form = document.getElementById("assignment-form");
+if (form && typeof form.scrollIntoView === 'function') {
+    form.scrollIntoView({ behavior: 'smooth' });
+}    
     }
   }
 }
-//assTable.addEventListener("click", handleTableClick);
 
 /**
  * TODO: Implement loadAndInitialize (async).
