@@ -3,6 +3,7 @@ let topics = [];
 const newTopicForm = document.getElementById('new-topic-form');
 const topicListContainer = document.getElementById('topic-list-container');
 
+// ---------------- CREATE ARTICLE ----------------
 function createTopicArticle(topic) {
     const article = document.createElement('article');
 
@@ -18,23 +19,24 @@ function createTopicArticle(topic) {
     return article;
 }
 
+// ---------------- RENDER ----------------
 function renderTopics() {
     topicListContainer.innerHTML = "";
+
     topics.forEach(topic => {
-        const topicArticle = createTopicArticle(topic);
-        topicListContainer.appendChild(topicArticle);
+        const article = createTopicArticle(topic);
+        topicListContainer.appendChild(article);
     });
 }
 
+// ---------------- CREATE TOPIC ----------------
 async function handleCreateTopic(event) {
     event.preventDefault();
 
-    const subjectInput = document.getElementById('topic-subject');
-    const messageInput = document.getElementById('topic-message');
+    const subject = document.getElementById('topic-subject').value;
+    const message = document.getElementById('topic-message').value;
     const submitBtn = document.getElementById('create-topic');
 
-    const subject = subjectInput.value;
-    const message = messageInput.value;
     const editId = submitBtn.getAttribute('data-edit-id');
 
     if (editId) {
@@ -51,20 +53,22 @@ async function handleCreateTopic(event) {
         const result = await response.json();
 
         if (result.success) {
-            const newTopic = {
+            topics.push({
                 id: result.id,
                 subject,
                 message,
                 author: "Student",
                 created_at: new Date().toISOString().slice(0, 19).replace('T', ' ')
-            };
-            topics.push(newTopic);
+            });
+
             renderTopics();
         }
     }
+
     newTopicForm.reset();
 }
 
+// ---------------- UPDATE ----------------
 async function handleUpdateTopic(id, fields) {
     const response = await fetch('./api/index.php', {
         method: 'PUT',
@@ -76,25 +80,28 @@ async function handleUpdateTopic(id, fields) {
 
     if (result.success) {
         const index = topics.findIndex(t => t.id === id);
+
         if (index !== -1) {
             topics[index].subject = fields.subject;
             topics[index].message = fields.message;
         }
+
         renderTopics();
     }
 }
 
+// ---------------- CLICK (DELETE / EDIT) ----------------
 async function handleTopicListClick(event) {
-    if (!event.target.dataset.id) return;
-    
     const id = parseInt(event.target.dataset.id);
 
     if (event.target.classList.contains('delete-btn')) {
+
         const response = await fetch(`./api/index.php?id=${id}`, {
             method: 'DELETE'
         });
 
         const result = await response.json();
+
         if (result.success) {
             topics = topics.filter(t => t.id !== id);
             renderTopics();
@@ -103,6 +110,7 @@ async function handleTopicListClick(event) {
 
     if (event.target.classList.contains('edit-btn')) {
         const topic = topics.find(t => t.id === id);
+
         if (topic) {
             document.getElementById('topic-subject').value = topic.subject;
             document.getElementById('topic-message').value = topic.message;
@@ -114,6 +122,7 @@ async function handleTopicListClick(event) {
     }
 }
 
+// ---------------- LOAD INIT ----------------
 async function loadAndInitialize() {
     try {
         const response = await fetch('./api/index.php');
