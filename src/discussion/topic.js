@@ -8,19 +8,23 @@ const replyListContainer = document.getElementById('reply-list-container');
 const replyForm = document.getElementById('reply-form');
 const newReplyText = document.getElementById('new-reply');
 
+// ---------------- GET ID ----------------
 function getTopicIdFromURL() {
     const params = new URLSearchParams(window.location.search);
     return params.get('id');
 }
 
+// ---------------- ORIGINAL POST ----------------
 function renderOriginalPost(topic) {
     topicSubject.textContent = topic.subject;
     opMessage.textContent = topic.message;
     opFooter.textContent = `Posted by: ${topic.author} on ${topic.created_at}`;
 }
 
+// ---------------- REPLY ARTICLE ----------------
 function createReplyArticle(reply) {
     const article = document.createElement('article');
+
     article.innerHTML = `
         <p>${reply.text}</p>
         <footer>Posted by: ${reply.author} on ${reply.created_at}</footer>
@@ -28,21 +32,24 @@ function createReplyArticle(reply) {
             <button class="delete-reply-btn" data-id="${reply.id}">Delete</button>
         </div>
     `;
+
     return article;
 }
 
+// ---------------- RENDER REPLIES ----------------
 function renderReplies() {
     replyListContainer.innerHTML = "";
+
     currentReplies.forEach(reply => {
-        const replyArticle = createReplyArticle(reply);
-        replyListContainer.appendChild(replyArticle);
+        replyListContainer.appendChild(createReplyArticle(reply));
     });
 }
 
+// ---------------- ADD REPLY ----------------
 async function handleAddReply(event) {
     event.preventDefault();
-    const replyText = newReplyText.value.trim();
 
+    const replyText = newReplyText.value.trim();
     if (!replyText) return;
 
     const response = await fetch('./api/index.php?action=reply', {
@@ -64,15 +71,18 @@ async function handleAddReply(event) {
     }
 }
 
+// ---------------- DELETE REPLY ----------------
 async function handleReplyListClick(event) {
     if (event.target.classList.contains('delete-reply-btn')) {
+
         const id = event.target.dataset.id;
-        
+
         const response = await fetch(`./api/index.php?action=delete_reply&id=${id}`, {
             method: 'DELETE'
         });
 
         const result = await response.json();
+
         if (result.success) {
             currentReplies = currentReplies.filter(r => r.id != id);
             renderReplies();
@@ -80,6 +90,7 @@ async function handleReplyListClick(event) {
     }
 }
 
+// ---------------- INIT ----------------
 async function initializePage() {
     currentTopicId = getTopicIdFromURL();
 
@@ -97,8 +108,9 @@ async function initializePage() {
         const topicResult = await topicRes.json();
         const repliesResult = await repliesRes.json();
 
-        if (topicResult.success && topicResult.data) {
+        if (topicResult.success) {
             currentReplies = repliesResult.data || [];
+
             renderOriginalPost(topicResult.data);
             renderReplies();
 
@@ -107,6 +119,7 @@ async function initializePage() {
         } else {
             topicSubject.textContent = "Topic not found.";
         }
+
     } catch (error) {
         topicSubject.textContent = "Error loading topic.";
         console.error(error);
