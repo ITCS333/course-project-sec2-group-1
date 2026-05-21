@@ -1,25 +1,22 @@
-// --- Element Selections ---
 const loginForm = document.getElementById("login-form");
 const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
 const messageContainer = document.getElementById("message-container");
 
-// --- Functions ---
 function displayMessage(message, type) {
   messageContainer.textContent = message;
   messageContainer.className = type;
 }
 
 function isValidEmail(email) {
-  const regex = /\S+@\S+\.\S+/;
-  return regex.test(email);
+  return /\S+@\S+\.\S+/.test(email);
 }
 
 function isValidPassword(password) {
   return password.length >= 8;
 }
 
-function handleLogin(event) {
+async function handleLogin(event) {
   event.preventDefault();
 
   const email = emailInput.value.trim();
@@ -35,17 +32,35 @@ function handleLogin(event) {
     return;
   }
 
-  displayMessage("Login successful!", "success");
+  try {
+    const response = await fetch("api/index.php", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email, password })
+    });
 
-  emailInput.value = "";
-  passwordInput.value = "";
-}
+    const result = await response.json();
 
-function setupLoginForm() {
-  if (loginForm) {
-    loginForm.addEventListener("submit", handleLogin);
+    if (result.success) {
+      displayMessage("Login successful!", "success");
+
+      setTimeout(function () {
+        if (Number(result.user.is_admin) === 1) {
+          window.location.href = "../admin/admin.html";
+        } else {
+          window.location.href = "../../index.html";
+        }
+      }, 800);
+    } else {
+      displayMessage(result.message, "error");
+    }
+  } catch (error) {
+    displayMessage("Login failed. Please try again.", "error");
   }
 }
 
-// --- Initial Page Load ---
-setupLoginForm();
+if (loginForm) {
+  loginForm.addEventListener("submit", handleLogin);
+}
